@@ -11,6 +11,8 @@
 #define PL_QUERY_LENGTH_SIZE 1
 #define PL_QUERY_MAX_LENGTH 0xff
 
+#define PL_TEMP_SIZE 2
+
 typedef enum
 {
     PL_COMMAND_DEPLOY,

@@ -1,17 +1,23 @@
+#include <limits.h>
+
 #include "driverlib.h"
 
 #include "SpiLib/QT_SPI_Protocol.h"
 #include "SpiLib/QT_SPI_SpiLib.h"
 #include "InternalADC/QT_adc.h"
+#include "BurnWire/QT_BW_BurnWire.h"
 #include "QT_LPMain.h"
 
-#define EVENT_QUEUE_LENGTH 256
+#define EVENT_QUEUE_LENGTH 250
 #define EVENT_QUEUE_HEADER_LENGTH 2
 
 // Event buffer code. The buffer is on
-byte eventQueue[EVENT_QUEUE_LENGTH + EVENT_QUEUE_HEADER_LENGTH];
+byte eventQueue [EVENT_QUEUE_LENGTH + EVENT_QUEUE_HEADER_LENGTH];
 int eventQueueStart = EVENT_QUEUE_LENGTH;
 volatile bool finishedSendingEvents = true;
+
+// Send buffer
+byte dataBuffer [PL_QUERY_MAX_LENGTH];
 
 // Sweep values
 uint16_t dacValue;
@@ -19,8 +25,16 @@ uint16_t dacValue;
 uint8_t digipotControl;
 uint8_t digipotData;
 
+// Sweep data
+uint16_t *voltageArray = NULL;
+uint16_t bufferLength;
+
 // Command systems
 volatile bool exitCommand = false;
+
+// Temperature Convertion
+const float maximumTemperature = -100.0;
+const float minimumTemperature = 100.0;
 
 /** The value of this variable is undefined if commandRunning = false */
 volatile PL_Command_t currentCommand;
@@ -96,11 +110,33 @@ void sendDigipot() {
 }
 
 void sendTemperature() {
+    float degreesC = QT_ADC_readTemperature();
 
+    float range = maximumTemperature - minimumTemperature;
+    float correctedValue = (degreesC - minimumTemperature) / range;
+
+    if(correctedValue < 0.0) {
+        correctedValue = 0.0;
+    } else if(correctedValue > 1.0) {
+        correctedValue = 1.0;
+    }
+
+    uint16_t rawData = correctedValue * UINT16_MAX;
+
+    // Assume that the OBC will not ask for data while we are sending data.
+    dataBuffer[0] = PL_START_BYTE;
+    dataBuffer[1] = PL_TEMP_SIZE;
+
+    // Match endianess to the processor
+    uint16_t *castPtr = (uint16_t *) &dataBuffer[2];
+    *castPtr = rawData;
+
+    // Send data
+    while(!QT_SPI_transmit(dataBuffer, 4, &ADC, NULL));
 }
 
 void sendSamplingData() {
-
+    //sweep_data_t result = QT_SW_retreiveSweepData();
 }
 
 void handleQuery(PL_Query_t query, const byte data [2]) {
@@ -166,7 +202,9 @@ void main(void) {
 
     while(true) {
         // Wait until a command has been queued
-        while(!commandRunning);
+        while(!commandRunning) {
+            sendTemperature();
+        }
 
         // These command functions are blocking.
         switch(currentCommand) {
@@ -175,6 +213,7 @@ void main(void) {
         case PL_COMMAND_CALIBRATION_STOP:
             break;
         case PL_COMMAND_DEPLOY:
+            QT_BW_deploy();
             break;
         case PL_COMMAND_POWER_OFF:
             break;
