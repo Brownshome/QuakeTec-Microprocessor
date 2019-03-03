@@ -5,6 +5,7 @@
 #include "SpiLib/QT_SPI_SpiLib.h"
 #include "QT_LPMain.h"
 
+#include "ExternalADC/QT_adc_external.h"
 #include "Timer/QT_timer.h"
 
 #define EVENT_QUEUE_LENGTH 256
@@ -46,7 +47,7 @@ void initialise() {
     GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN1);
     GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN1);
 
-    QT_IADC_initialise();
+    //QT_IADC_initialise();
     QT_SPI_initialise();
     //QT_TIMER_initialise();
     QT_EADC_initialise();
@@ -189,6 +190,12 @@ void startListening() {
 
 void toggleLED() {
     GPIO_toggleOutputOnPin(GPIO_PIN0, GPIO_PORT_P1);
+}
+
+volatile bool retrigger = true;
+
+void voltage(float number) {
+    retrigger = true;
 }
 
 /*
