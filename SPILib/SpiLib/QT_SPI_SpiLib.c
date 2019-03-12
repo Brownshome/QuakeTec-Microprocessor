@@ -123,7 +123,7 @@ static void initialiseMaster() {
     param.msbFirst = EUSCI_B_SPI_MSB_FIRST;
     param.clockPhase = EUSCI_B_SPI_PHASE_DATA_CHANGED_ONFIRST_CAPTURED_ON_NEXT;
     param.clockPolarity = EUSCI_B_SPI_CLOCKPOLARITY_INACTIVITY_HIGH;
-    param.spiMode = EUSCI_B_SPI_3PIN;
+    param.spiMode = EUSCI_B_SPI_4PIN_UCxSTE_ACTIVE_LOW;
     EUSCI_B_SPI_initMaster(EUSCI_B1_BASE, &param);
 
     // Enable SPI module
@@ -493,9 +493,6 @@ static void setMasterListenState(bool isListening) {
     if(isListeningToMaster) {
         // Reset the buffer
         masterReceiveBufferPtr = masterReceiveBuffer;
-        GPIO_setOutputHighOnPin(GPIO_PORT_P1, GPIO_PIN0);
-    } else {
-        GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN0);
     }
 }
 

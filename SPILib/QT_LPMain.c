@@ -40,22 +40,17 @@ void initialise() {
             487 / 4
     );
 
-    GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN0);
-    GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN0);
-
-    GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN1);
-    GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN1);
+    // Configure everything as pulldown input
+    GPIO_setAsInputPinWithPullDownResistor(GPIO_PORT_P1, GPIO_PIN0 | GPIO_PIN1 | GPIO_PIN2 | GPIO_PIN3);
+    GPIO_setAsInputPinWithPullDownResistor(GPIO_PORT_P2, 0xff);
+    GPIO_setAsInputPinWithPullDownResistor(GPIO_PORT_P3, 0xff);
+    GPIO_setAsInputPinWithPullDownResistor(GPIO_PORT_P4, 0xfe);
+    GPIO_setAsInputPinWithPullDownResistor(GPIO_PORT_P5, GPIO_PIN0 | GPIO_PIN1);
 
     QT_IADC_initialise();
     QT_SPI_initialise();
-    //QT_TIMER_initialise();
-    QT_EADC_initialise();
-
-    GPIO_setAsPeripheralModuleFunctionOutputPin(
-            GPIO_PORT_P2,
-            GPIO_PIN6,
-            GPIO_PRIMARY_MODULE_FUNCTION
-    );
+    // QT_TIMER_initialise();
+    // QT_EADC_initialise();
 
     // Disable the GPIO power-on default high-impedance mode
     // to activate previously configured port settings
@@ -187,10 +182,6 @@ void startListening() {
     QT_SPI_listenToMaster();
 }
 
-void toggleLED() {
-    GPIO_toggleOutputOnPin(GPIO_PIN0, GPIO_PORT_P1);
-}
-
 /*
  * This file handles the communication with the OBC, this is the main event loop that handles
  */
@@ -200,18 +191,13 @@ void main(void) {
     startListening();
 
     while(true) {
-        QT_EADC_measureFloatVoltage(voltage);
-
-        __delay_cycles(10000);
-    }
-
-    while(true) {
         // Wait until a command has been queued
         while(!commandRunning);
 
         // These command functions are blocking.
         switch(currentCommand) {
         case PL_COMMAND_CALIBRATION_START:
+            queueEvent(PL_EVENT_CALIBRATION_DONE);
             break;
         case PL_COMMAND_CALIBRATION_STOP:
             break;
@@ -220,6 +206,7 @@ void main(void) {
         case PL_COMMAND_POWER_OFF:
             break;
         case PL_COMMAND_POWER_ON:
+            queueEvent(PL_EVENT_PROBE_POWERED);
             break;
         case PL_COMMAND_SAMPLING_START:
             break;

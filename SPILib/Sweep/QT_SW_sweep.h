@@ -7,7 +7,7 @@
 #include "Common/QT_COM_common.h"
 #include "ExternalADC/QT_adc_external.h"
 #include "DAC/QT_DAC.h"
-#include "Digipot/QT_DIGIPOT.h"
+#include "Digipot/QT_digipot.h"
 #include "FRAM/QT_FRAM.h"
 
 /*
