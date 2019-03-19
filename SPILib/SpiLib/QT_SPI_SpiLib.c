@@ -7,7 +7,7 @@
  * Defines
  */
 #define BUFFER_LENGTH 256
-#define SPI_CLK_FREQUENCY 3200000
+#define SPI_CLK_FREQUENCY 32000
 #define DEFAULT_SEND 0
 
 typedef void(*spi_transmit_func)(uint16_t, uint8_t);
@@ -61,6 +61,11 @@ static bool volatile isSlaveTransmitInterruptPending = false;
  */
 static byte const *volatile masterTransmitPtr;
 static byte const *volatile slaveTransmitPtr;
+
+/**
+ * True if the CS should be shutoff when the data has finished sending.
+ */
+static volatile bool slaveCSShutoff = false;
 
 /**
  * A pointer to a function that is to be called when the current transmission is completed
@@ -238,7 +243,8 @@ static void sendByte(device_t *devicePtr, spi_transmit_func transmitData, byte c
             if (isListeningToSlave) {
                 sendNullByteToSlave();
             } else {
-                setChipSelect(NULL);
+                // TODO slow propogation of CS but fast propogation of other data
+                slaveCSShutoff = true;
             }
         }
 
@@ -540,13 +546,18 @@ __interrupt void USCI_B1_ISR(void)
     {
     // Receive data case
     case USCI_SPI_UCRXIFG:
-
         // Check if we're pointing to a slave
         if (currentSlavePtr == NULL) {
             break;
         }
 
         receiveByte(currentSlavePtr, &EUSCI_B_SPI_receiveData, &slaveReceiveBufferPtr, slaveReceiveBuffer);
+
+        if(slaveCSShutoff) {
+            setChipSelect(NULL);
+            slaveCSShutoff = false;
+        }
+
         break;
 
         // Transmit data case

@@ -9,11 +9,14 @@
 // TODO find this value. This is the analog value that the DAC is driven to.
 #define ADC_VA 5.0
 
+#define ADC_SHIFT 1
+
 #include "QT_adc_external.h"
 #include "SpiLib/QT_SPI_SpiLib.h"
 
 static adc_read_func_t currentCallback = NULL;
-static byte adcCode;
+
+static uint32_t sendData;
 
 static float convertToVoltage(uint16_t raw) {
     // Steps occur in the middle o
@@ -28,8 +31,6 @@ static void adcHandler(const byte *data) {
         (*currentCallback)(result);
         currentCallback = NULL;
     }
-
-    QT_SPI_stopListeningToSlave();
 }
 
 /**
@@ -45,10 +46,9 @@ void QT_EADC_initialise() {
  * no action is taken.
  **/
 bool QT_EADC_measureSweepCurrent(adc_read_func_t callback) {
-    adcCode = 0;
-    QT_SPI_listenToSlave(&ADC);
+    sendData = 0 << ADC_SHIFT;
     currentCallback = callback;
-    return QT_SPI_transmit(&adcCode, 1, &ADC, NULL);
+    return QT_SPI_transmit((byte * ) &sendData, 2, &ADC, NULL);
 }
 
 /**
@@ -57,10 +57,9 @@ bool QT_EADC_measureSweepCurrent(adc_read_func_t callback) {
  * no action is taken.
  **/
 bool QT_EADC_measureFloatVoltage(adc_read_func_t callback) {
-    adcCode = 1;
-    QT_SPI_listenToSlave(&ADC);
+    sendData = 0xffff;
     currentCallback = callback;
-    return QT_SPI_transmit(&adcCode, 1, &ADC, NULL);
+    return QT_SPI_transmit((byte *) &sendData, 2, &ADC, NULL);
 }
 
 /**
@@ -69,8 +68,7 @@ bool QT_EADC_measureFloatVoltage(adc_read_func_t callback) {
  * no action is taken.
  **/
 bool QT_EADC_measureSweepVoltage(adc_read_func_t callback) {
-    adcCode = 2;
-    QT_SPI_listenToSlave(&ADC);
+    sendData = 2 << ADC_SHIFT;
     currentCallback = callback;
-    return QT_SPI_transmit(&adcCode, 1, &ADC, NULL);
+    return QT_SPI_transmit((byte *) &sendData, 2, &ADC, NULL);
 }
