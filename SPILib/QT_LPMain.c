@@ -36,12 +36,12 @@ void initialise() {
     WDT_A_hold(WDT_A_BASE);
 
     CS_initFLLSettle(
-            16000 / 4,
-            487 / 4
+            16000,
+            487
     );
 
-    GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN0);
-    GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN0);
+    GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN0 | GPIO_PIN1);
+    GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN0 | GPIO_PIN1);
 
     GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN1);
     GPIO_setOutputLowOnPin(GPIO_PORT_P1, GPIO_PIN1);
@@ -50,12 +50,6 @@ void initialise() {
     QT_SPI_initialise();
     //QT_TIMER_initialise();
     QT_EADC_initialise();
-
-    GPIO_setAsPeripheralModuleFunctionOutputPin(
-            GPIO_PORT_P2,
-            GPIO_PIN6,
-            GPIO_PRIMARY_MODULE_FUNCTION
-    );
 
     // Disable the GPIO power-on default high-impedance mode
     // to activate previously configured port settings
@@ -191,18 +185,21 @@ void toggleLED() {
     GPIO_toggleOutputOnPin(GPIO_PIN0, GPIO_PORT_P1);
 }
 
+void voltage(float x) {
+
+}
+
 /*
  * This file handles the communication with the OBC, this is the main event loop that handles
  */
 void main(void) {
     initialise();
 
-    startListening();
+    //startListening();
 
     while(true) {
         QT_EADC_measureFloatVoltage(voltage);
-
-        __delay_cycles(10000);
+        __delay_cycles(1000000);
     }
 
     while(true) {
